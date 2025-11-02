@@ -34,10 +34,21 @@ num_cols = df.select_dtypes(include='number').columns.tolist()
 if num_cols:
     st.sidebar.subheader("Numeric range filters")
     for c in num_cols:
-        mn = float(df[c].min())
-        mx = float(df[c].max())
-        lo, hi = st.sidebar.slider(f"{c}", mn, mx, (mn, mx))
-        df = df[(df[c] >= lo) & (df[c] <= hi)]
+        col_data = df[c].dropna()
+        if col_data.empty:
+            continue
+        mn = float(col_data.min())
+        mx = float(col_data.max())
+        # avoid Streamlit slider error when min == max
+        if mn == mx:
+            st.sidebar.write(f"Skipping '{c}' (no variation)")
+            continue
+        try:
+            lo, hi = st.sidebar.slider(f"{c}", mn, mx, (mn, mx))
+            df = df[(df[c] >= lo) & (df[c] <= hi)]
+        except Exception as e:
+            st.sidebar.write(f"Skipping '{c}' (slider issue: {e})")
+
 
 # sorting
 sort_col = st.sidebar.selectbox("Sort by (optional)", ["None"] + list(df.columns))
